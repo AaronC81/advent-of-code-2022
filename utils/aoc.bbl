@@ -1,0 +1,10 @@
+struct AOC.
+impl AOC {
+    /// Reads the input file for a numbered day.
+    ///
+    /// @param day The day number to read input for.
+    /// @returns The input file contents.
+    static func readInput: day {
+        File open: ("input/day" concat: (day repr)) in: &readAllText
+    }
+}
