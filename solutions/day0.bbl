@@ -1,6 +1,6 @@
 // Just a test for setting up directory structure - not a real AoC puzzle!
 // Try summing the numbers in the input file
-Program evalFile: "utils/aoc.bbl".
+Program evalFile: "../utils/aoc.bbl".
 input = AOC readInput: 0.
 
 answer = input split: "\n"
