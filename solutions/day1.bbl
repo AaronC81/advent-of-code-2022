@@ -1,0 +1,30 @@
+Program evalFile: "../utils/aoc.bbl".
+
+struct Day1.
+impl Day1 {
+    static func loadElves {
+        // Split each double-newline to get each elf
+        AOC readInput: 1
+            $ split: "\n\n"
+            $ map: [ |elfLines|
+                // Split each elf's lines and convert them to integers
+                elfLines split: "\n" $ map: &toInteger
+            ]
+    }
+
+    static func part1 {
+        // Find the elf who's carrying the most
+        self loadElves map: &sum $ max
+    }
+
+    static func part2 {
+        // Find the three elves who are carrying the most
+        // Do this by sorting the list (descending) and taking the first 3 items, then summing those
+        self loadElves map: &sum
+            $ sort reverse
+            $ take: 3 $ sum
+    }
+}
+
+Console println: Day1 part1.
+Console println: Day1 part2.
