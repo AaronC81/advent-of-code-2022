@@ -1,0 +1,115 @@
+Program evalFile: "../utils/aoc.bbl".
+
+/// The result of a match, from your perspective.
+enum Outcome {
+    Win.
+    Loss.
+    Draw.
+}
+impl Outcome {
+    /// Converts a character from the input to the corresponding play. (For part 2)
+    static func parse: char {
+        Match value: char toOneOf: #{
+            ?[ |"X"| Outcome#Loss ]
+            ?[ |"Y"| Outcome#Draw ]
+            ?[ |"Z"| Outcome#Win  ]
+        } $ value
+    }
+
+    /// The score achieved from this outcome. (Must be multiplied with your play score to get a
+    /// total score for a round.)
+    func score {
+        Match value: self toOneOf: #{
+            ?[ | Outcome#Win  | 6 ]
+            ?[ | Outcome#Loss | 0 ]
+            ?[ | Outcome#Draw | 3 ]
+        } $ value
+    }
+
+    /// Determines the `Play` that you need to use against your opponent's given play, in order to
+    /// achieve this outcome.
+    func playAgainstToAchieve: other {
+        // Try each play until we find the one which gives this outcome
+        #{ Play#Rock. Play#Paper. Play#Scissors }
+            find: [ |myPlay| myPlay outcomeVersus: other $ equals: self ]
+    }
+}
+
+/// The play made by a player.
+enum Play {
+    Rock.
+    Paper.
+    Scissors.
+}
+impl Play {
+    /// Converts a character from the input to the corresponding play.
+    static func parse: char {
+        Match value: char toOneOf: #{
+            ?[ |"A"| Play#Rock     ]
+            ?[ |"X"| Play#Rock     ]
+            ?[ |"B"| Play#Paper    ]
+            ?[ |"Y"| Play#Paper    ]
+            ?[ |"C"| Play#Scissors ]
+            ?[ |"Z"| Play#Scissors ]
+        } $ value
+    }
+
+    /// Determines the `Outcome` if you play this against your opponent's given play.
+    func outcomeVersus: other {
+        Match value: #{ self. other } toOneOf: #{
+            ?[ | #{ Play#Rock. Play#Scissors } | Outcome#Win ]
+            ?[ | #{ Play#Scissors. Play#Rock } | Outcome#Loss ]
+
+            ?[ | #{ Play#Paper. Play#Rock } | Outcome#Win ]
+            ?[ | #{ Play#Rock. Play#Paper } | Outcome#Loss ]
+
+            ?[ | #{ Play#Scissors. Play#Paper } | Outcome#Win ]
+            ?[ | #{ Play#Paper. Play#Scissors } | Outcome#Loss ]
+
+            ?[ | _ | Outcome#Draw ]
+        } $ value
+    }
+
+    /// The score achieved from this play. (Must be multiplied with your outcome score to get a
+    /// total score for a round.)
+    func score {
+        Match value: self toOneOf: #{
+            ?[ | Play#Rock     | 1 ]
+            ?[ | Play#Paper    | 2 ]
+            ?[ | Play#Scissors | 3 ]
+        } $ value
+    }
+}
+
+struct Day2.
+impl Day2 {
+    static func part1 {
+        AOC readInput: 2
+            $ split: "\n"
+            $ map: [ |l|
+                plays = l split: " ".
+                theirPlay = Play parse: plays first.
+                myPlay = Play parse: plays last.
+
+                myPlay outcomeVersus: theirPlay $ score $ + myPlay score.
+            ]
+            $ sum
+    }
+
+    static func part2 {
+        AOC readInput: 2
+            $ split: "\n"
+            $ map: [ |l|
+                parts = l split: " ".
+                theirPlay = Play parse: parts first.
+                myOutcome = Outcome parse: parts last.
+                myPlay = myOutcome playAgainstToAchieve: theirPlay.
+
+                myPlay outcomeVersus: theirPlay $ score $ + myPlay score.
+            ]
+            $ sum
+    }
+}
+
+Console println: Day2 part1.
+Console println: Day2 part2.
