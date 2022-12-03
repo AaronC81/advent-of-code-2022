@@ -10,9 +10,9 @@ impl Outcome {
     /// Converts a character from the input to the corresponding play. (For part 2)
     static func parse: char {
         Match value: char toOneOf: #{
-            ?[ |"X"| Outcome#Loss ]
-            ?[ |"Y"| Outcome#Draw ]
-            ?[ |"Z"| Outcome#Win  ]
+            ?[ |"X"| #Loss ]
+            ?[ |"Y"| #Draw ]
+            ?[ |"Z"| #Win  ]
         } $ value
     }
 
@@ -20,9 +20,9 @@ impl Outcome {
     /// total score for a round.)
     func score {
         Match value: self toOneOf: #{
-            ?[ | Outcome#Win  | 6 ]
-            ?[ | Outcome#Loss | 0 ]
-            ?[ | Outcome#Draw | 3 ]
+            ?[ | #Win  | 6 ]
+            ?[ | #Loss | 0 ]
+            ?[ | #Draw | 3 ]
         } $ value
     }
 
@@ -45,26 +45,26 @@ impl Play {
     /// Converts a character from the input to the corresponding play.
     static func parse: char {
         Match value: char toOneOf: #{
-            ?[ |"A"| Play#Rock     ]
-            ?[ |"X"| Play#Rock     ]
-            ?[ |"B"| Play#Paper    ]
-            ?[ |"Y"| Play#Paper    ]
-            ?[ |"C"| Play#Scissors ]
-            ?[ |"Z"| Play#Scissors ]
+            ?[ |"A"| #Rock     ]
+            ?[ |"X"| #Rock     ]
+            ?[ |"B"| #Paper    ]
+            ?[ |"Y"| #Paper    ]
+            ?[ |"C"| #Scissors ]
+            ?[ |"Z"| #Scissors ]
         } $ value
     }
 
     /// Determines the `Outcome` if you play this against your opponent's given play.
     func outcomeVersus: other {
         Match value: #{ self. other } toOneOf: #{
-            ?[ | #{ Play#Rock. Play#Scissors } | Outcome#Win ]
-            ?[ | #{ Play#Scissors. Play#Rock } | Outcome#Loss ]
+            ?[ | #{ #Rock. #Scissors } | Outcome#Win ]
+            ?[ | #{ #Scissors. #Rock } | Outcome#Loss ]
 
-            ?[ | #{ Play#Paper. Play#Rock } | Outcome#Win ]
-            ?[ | #{ Play#Rock. Play#Paper } | Outcome#Loss ]
+            ?[ | #{ #Paper. #Rock } | Outcome#Win ]
+            ?[ | #{ #Rock. #Paper } | Outcome#Loss ]
 
-            ?[ | #{ Play#Scissors. Play#Paper } | Outcome#Win ]
-            ?[ | #{ Play#Paper. Play#Scissors } | Outcome#Loss ]
+            ?[ | #{ #Scissors. #Paper } | Outcome#Win ]
+            ?[ | #{ #Paper. #Scissors } | Outcome#Loss ]
 
             ?[ | _ | Outcome#Draw ]
         } $ value
@@ -74,9 +74,9 @@ impl Play {
     /// total score for a round.)
     func score {
         Match value: self toOneOf: #{
-            ?[ | Play#Rock     | 1 ]
-            ?[ | Play#Paper    | 2 ]
-            ?[ | Play#Scissors | 3 ]
+            ?[ | #Rock     | 1 ]
+            ?[ | #Paper    | 2 ]
+            ?[ | #Scissors | 3 ]
         } $ value
     }
 }
