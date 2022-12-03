@@ -1,0 +1,89 @@
+Program evalFile: "../utils/aoc.bbl".
+
+// Extension methods for String
+impl String {
+    func isUppercase { self uppercase equals: self }
+    func isLowercase { self lowercase equals: self }
+}
+
+/// A rucksack with two separate compartments.
+struct Rucksack firstCompartment secondCompartment.
+impl Rucksack {
+    /// Converts a line of input in a rucksack. The characters on the first half of the line go
+    /// in the first compartment of the rucksack, and the second half go in the second compartment.
+    static func parse: str {
+        chars = str chars.
+        compartments = chars
+            withIndex
+            partition: ![ | #{ i. c } | i lessThan: (chars length / 2) ]
+        
+        self
+            firstCompartment: (compartments first map: &last) // Remove indexes from `withIndex`
+            secondCompartment: (compartments last map: &last)
+    }
+
+    /// Gives the priority of an item as an integer.
+    static func itemPriority: item {
+        item isLowercase
+            ifTrue: [ item toAsciiCode - "a" toAsciiCode + 1  ]
+            else:   [ item toAsciiCode - "A" toAsciiCode + 27 ]
+    }
+
+    /// Finds the single item which is in both compartments of the rucksack.
+    func itemInBothCompartments {
+        self firstCompartment find: [ |x| self secondCompartment contains: x ]
+    }
+
+    /// Unions the items in the two compartments of the rucksack. (The single duplicated item is not
+    /// included more than once.)
+    func bothCompartments {
+        r = #{}.
+        r appendAll: self firstCompartment.
+        r appendAll: self secondCompartment.
+        r unique
+    }
+
+    /// Given an array of rucksacks, find the single item present in all of them.
+    static func itemInAll: rucksacks {
+        // Create a pool of items from the first rucksack, and remove from it when we find that
+        // future items aren't in subsequent rucksacks.
+        pool = rucksacks first bothCompartments.
+
+        rucksacks skip: 1 $ forEach: [ |r|
+            pool = pool filter: [ |x| r bothCompartments contains: x ]
+        ].
+
+        // There should be one item left!
+        pool length equals: 1 $
+            ifTrue: [ pool first ]
+            else:   [ Program error: "more than one item left" ]
+    }
+}
+
+struct Day3.
+impl Day3 {
+    /// Load all rucksacks from the input file.
+    static func rucksacks {
+        AOC readInput: 3
+            $ split: "\n"
+            $ map: [ |l| Rucksack parse: l ]
+    }
+
+    static func part1 {
+        self rucksacks
+            map: [ |r| r itemInBothCompartments ]
+            $ map: [ |x| Rucksack itemPriority: x ]
+            $ sum
+    }
+
+    static func part2 {
+        trios = self rucksacks chunk: 3.
+        trios
+            map: [ |t| Rucksack itemInAll: t ]
+            $ map: [ |x| Rucksack itemPriority: x ]
+            $ sum
+    }
+}
+
+Console println: Day3 part1.
+Console println: Day3 part2.
