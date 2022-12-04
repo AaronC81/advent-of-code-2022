@@ -3,6 +3,16 @@ Program evalFile: "../utils/aoc.bbl".
 /// A pair of ranges which a pair of elves have been assigned to clean.
 struct AssigmentPair one two.
 impl AssigmentPair {
+    /// Parses a line of input into a new pair.
+    static func parse: line {
+        ranges = line split: "," $ map: [ |p|
+            range = p split: "-" $ map: &toInteger.
+            // Our ranges are exclusive-end, so add one to the end in the file
+            Range start: (range first) end: (range last + 1)
+        ].
+        self one: (ranges first) two: (ranges last)
+    }
+
     /// Returns true if one range is completely encapsulated by the other.
     func containing {
         (self one contains: self two) or: (self two contains: self one)
@@ -21,15 +31,7 @@ impl Day4 {
     static func pairs {
         AOC readInput: 4
             $ split: "\n"
-            $ map: [ |l|
-                ranges = l split: ","
-                    $ map: [ |p|
-                        range = p split: "-" $ map: &toInteger.
-                        // Our ranges are exclusive-end, so add one to the end in the file
-                        Range start: (range first) end: (range last + 1)
-                    ].
-                AssigmentPair one: (ranges first) two: (ranges last)
-            ]
+            $ map: [ |l| AssigmentPair parse: l ]
     }
 
     static func day1 {
