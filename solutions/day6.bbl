@@ -1,0 +1,23 @@
+Program evalFile: "../utils/aoc.bbl".
+
+struct Day6.
+impl Day6 {
+    private static func findStartOfMessage: n {
+        signal = AOC readInput: 6 $ chars.
+
+        // `window:` was a handy stdlib method to already have!
+        //   #{ 1 2 3 } window: 2 -> #{ #{ 1 2 } #{ 2 3 } }
+        // Look for a window where all elements are different, tracking the index as we go
+        result = signal window: n $ withIndex find: ![ | #{ _. chars } |
+            chars unique length equals: n
+        ].
+        
+        result first + n
+    }
+
+    static func part1 { self findStartOfMessage: 4 }
+    static func part2 { self findStartOfMessage: 14 }
+}
+
+Console println: Day6 part1.
+Console println: Day6 part2.
