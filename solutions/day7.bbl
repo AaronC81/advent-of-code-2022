@@ -1,0 +1,157 @@
+Program evalFile: "../utils/aoc.bbl".
+
+/// A directory in the communication system's filesystem.
+struct FsDirectory name parent children.
+impl FsDirectory {
+    /// Creates a new empty directory with a given name.
+    static func new: name {
+        FsDirectory name: name parent: null children: #{}
+    }
+
+    /// Adds a child file or directory to this one, setting this as its parent.
+    func addChild: file {
+        file parent = self.
+        self children append: file.
+    }
+
+    /// Gets a child item by name from this directory, or `null` if no such item exists.
+    func getChild: name {
+        self children find: [ |child| child name equals: name ]
+    }
+
+    /// Returns the size of this directory and all of its children recursively.
+    func size {
+        self children map: &size $ sum
+    }
+
+    /// Calls a function on all child directories of this recursively.
+    func walkDirs: fn {
+        self children forEach: ?[ | d = FsDirectory |
+            fn call: d.
+            d walkDirs: fn.
+        ]
+    }
+}
+
+/// A file in the communication system's filesystem.
+struct FsFile name parent size.
+impl FsFile {
+    /// Creates a new file with a given name and size.
+    static func new: name size: size {
+        FsFile name: name parent: null size: size
+    }
+}
+
+/// The shell which the communication system uses to execute commands.
+///
+/// Tracks the root and current `FsDirectory`, and adds files to them when encountering commands.
+struct Shell root cwd.
+impl Shell {
+    /// Execute a single command.
+    func executeCommand: command {
+        Match value: command toOneOf: #{
+            ?[ | Command#ChangeDirectory target: "/"  | self cwd = self root ]
+            ?[ | Command#ChangeDirectory target: ".." | self cwd = self cwd parent ]
+            ?[ | Command#ChangeDirectory target: t    | self cwd = self cwd getChild: t ]
+            ?[ | Command#ListDirectory items: items |
+                items forEach: [ |item|
+                    self cwd addChild: item
+                ]
+            ]
+            ?[ | _ | Program error: "unknown command" ]
+        }
+    }
+}
+
+/// A command which can be run in a `Shell`.
+enum Command {
+    ChangeDirectory target.
+    ListDirectory items.
+}
+impl Command {
+    /// Parses a string of puzzle input into a list of commands.
+    static func parseAll: input {
+        lines = input split: "\n".
+        commands = #{}.
+
+        // Use a count-based while-loop so that the loop's body can take more items when needed
+        i = 0.
+        [ i lessThan: lines length ] whileTrue: [
+            commandLine = lines get: i.
+            i = i + 1.
+
+            commandParts = commandLine split: " ".
+            command = Match value: commandParts toOneOf: #{
+                ?[ | #{ "$". "cd". target } | #ChangeDirectory target: target ]
+                ?[ | #{ "$". "ls" } |
+                    // Grab the lines until the next command
+                    fileLines = #{}.
+                    [ (i lessThan: lines length) andAlso: [ lines get: i $ charAt: 0 $ notEquals: "$" ] ] whileTrue: [
+                        fileLines append: (lines get: i).
+                        i = i + 1.
+                    ].
+
+                    // Parse into instances of `FsFile` or `FsDirectory`
+                    files = fileLines map: [ |fileLine|
+                        fileParts = fileLine split: " ".
+                        fileParts first equals: "dir" $
+                            ifTrue: [ FsDirectory new: fileParts last ]
+                            else:   [ FsFile new: fileParts last size: fileParts first toInteger ]
+                    ]
+
+                    #ListDirectory items: files
+                ]
+            } $ value.
+
+            commands append: command.
+        ].
+
+        commands
+    }
+}
+
+struct Day7.
+impl Day7 {
+    /// Builds the filesystem from the puzzle input, and returns the root directory.
+    private static func computedFilesystem {
+        root = FsDirectory new: "root".
+        shell = Shell root: root cwd: root.
+        commands = Command parseAll: (AOC readInput: 7).
+        commands forEach: [ |command| shell executeCommand: command ].
+
+        root
+    }
+
+    static func part1 {
+        root = self computedFilesystem.
+        totalUnderThreshold = 0.
+        root walkDirs: [ |dir|
+            size = dir size.
+            size lessThan: 100000 $ ifTrue: [
+                totalUnderThreshold = totalUnderThreshold + size.
+            ]
+        ].
+        totalUnderThreshold
+    }
+
+    static func part2 {
+        root = self computedFilesystem.
+
+        totalDiskSize = 70000000.
+        availableSpace = totalDiskSize - root size.
+        requiredSpace = 30000000.
+
+        deletableDirs = #{}.
+        root walkDirs: [ |dir|
+            size = dir size.
+            (availableSpace + size) greaterThanOrEquals: requiredSpace $ ifTrue: [
+                deletableDirs append: dir.
+            ]
+        ].
+
+        deletableDirs map: &size $ min
+    }
+}
+
+Console println: Day7 part1.
+Console println: Day7 part2.
