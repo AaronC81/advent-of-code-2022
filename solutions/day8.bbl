@@ -1,6 +1,17 @@
 Program evalFile: "../utils/aoc.bbl".
 
-struct Tree height visibleFromOutside.
+struct Visibility up down left right.
+impl Visibility {
+    static func new {
+        self up: null down: null left: null right: null
+    }
+
+    func scenicScore {
+        self up * self down * self left * self right
+    }
+}
+
+struct Tree height visibleFromOutside visibility.
 
 /// A forest - a grid of trees.
 /// Trees are indexed by Y then X, with (0, 0) being the top-left.
@@ -9,7 +20,9 @@ impl Forest {
     /// Loads the forest from the puzzle input.
     static func parse: text {
         trees = text split: "\n" $ map: [ |line|
-            line chars map: [ |char| Tree height: char toInteger visibleFromOutside: false ]
+            line chars map: [ |char|
+                Tree height: char toInteger visibleFromOutside: false visibility: Visibility new
+            ]
         ].
         Forest trees: trees
     }
@@ -49,6 +62,41 @@ impl Forest {
             current = nextFn call: current.
         ]
     }
+
+    /// Iterates over the forest, starting from a start position and calling a function to advance
+    /// it until an out-of-bounds tree is accessed or the threshold height is met/exceeded. Counts
+    /// the number of trees iterated over, not including the start.
+    func countFrom: start next: nextFn untilHeight: heightThreshold {
+        current = nextFn call: start.
+        count = 0.
+
+        Program loop: [
+            tree = self get: current.
+            tree isNull ifTrue: [ return count ].
+
+            // We can see a tree that's blocking us, so be sure to increment the count before
+            // checking that
+            count = count + 1.
+            tree height greaterThanOrEquals: heightThreshold $ ifTrue: [ return count ].
+
+            current = nextFn call: current.
+        ]
+    }
+
+    /// Calculates the visibility if a treehouse was placed on a given tree.
+    func calculateVisibility: xy {
+        x = xy first.
+        y = xy last.
+        tree = self get: xy.
+
+        // Count visible trees in all directions
+        left  = self countFrom: xy next: ![ | #{ x. y } | #{ x - 1. y } ] untilHeight: tree height.
+        right = self countFrom: xy next: ![ | #{ x. y } | #{ x + 1. y } ] untilHeight: tree height.
+        up    = self countFrom: xy next: ![ | #{ x. y } | #{ x. y - 1 } ] untilHeight: tree height.
+        down  = self countFrom: xy next: ![ | #{ x. y } | #{ x. y + 1 } ] untilHeight: tree height.
+        
+        tree visibility = Visibility up: up down: down left: left right: right.
+    }
 }
 
 struct Day8.
@@ -70,6 +118,21 @@ impl Day8 {
 
         forest trees map: [ |row| row filter: &visibleFromOutside $ length ] $ sum
     }
+
+    static func part2 {
+        forest = Forest parse: (AOC readInput: 8).
+
+        // Calculate visibility for all trees
+        forest height times: [ |y|
+            forest width times: [ |x|
+                forest calculateVisibility: #{ x. y }
+            ]
+        ].
+        
+        // Find highest scenic score
+        forest trees map: [ |row| row map: [ |tree| tree visibility scenicScore ] $ max ] $ max
+    }
 }
 
 Console println: Day8 part1.
+Console println: Day8 part2.
