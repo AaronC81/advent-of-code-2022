@@ -1,0 +1,75 @@
+Program evalFile: "../utils/aoc.bbl".
+
+struct Tree height visibleFromOutside.
+
+/// A forest - a grid of trees.
+/// Trees are indexed by Y then X, with (0, 0) being the top-left.
+struct Forest trees.
+impl Forest {
+    /// Loads the forest from the puzzle input.
+    static func parse: text {
+        trees = text split: "\n" $ map: [ |line|
+            line chars map: [ |char| Tree height: char toInteger visibleFromOutside: false ]
+        ].
+        Forest trees: trees
+    }
+
+    /// The height of the forest (unrelated from the height of the trees).
+    func height {
+        self trees length
+    }
+
+    /// The width of the forest.
+    func width {
+        self trees first length
+    }
+
+    /// Gets a tree at the given #{ x y } coordinate.
+    func get: xy {
+        row = self trees get: xy last.
+        row isNull ifTrue: [ return null ].
+        row get: xy first
+    }
+
+    /// Iterates over the forest, starting from a start position and calling a function to advance
+    /// it until an out-of-bounds tree is accessed. The `visibleFromOutside` property is calculated
+    /// during iteration.
+    func scanVisibleFromOutside: start next: nextFn {
+        current = start.
+        tallestSeen = 1 negate.
+
+        Program loop: [
+            tree = self get: current.
+            tree isNull ifTrue: [ return null ].
+
+            tree height greaterThan: tallestSeen $ ifTrue: [
+                tallestSeen = tree height.
+                tree visibleFromOutside = true.
+            ].
+            current = nextFn call: current.
+        ]
+    }
+}
+
+struct Day8.
+impl Day8 {
+    static func part1 {
+        forest = Forest parse: (AOC readInput: 8).
+
+        // Scan rows in both directions
+        forest height times: [ |y|
+            forest scanVisibleFromOutside: #{ 0. y }                next: ![ | #{ x. y } | #{ x + 1. y } ].
+            forest scanVisibleFromOutside: #{ forest width - 1. y } next: ![ | #{ x. y } | #{ x - 1. y } ].
+        ].
+
+        // Scan columns in both directions
+        forest width times: [ |x|
+            forest scanVisibleFromOutside: #{ x. 0 }                 next: ![ | #{ x. y } | #{ x. y + 1 } ].
+            forest scanVisibleFromOutside: #{ x. forest height - 1 } next: ![ | #{ x. y } | #{ x. y - 1 } ].
+        ].
+
+        forest trees map: [ |row| row filter: &visibleFromOutside $ length ] $ sum
+    }
+}
+
+Console println: Day8 part1.
