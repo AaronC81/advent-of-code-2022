@@ -81,7 +81,7 @@ impl Command {
             i = i + 1.
 
             commandParts = commandLine split: " ".
-            command = Match value: commandParts toOneOf: #{
+            command = commandParts match mustBeOneOf: #{
                 ?[ | #{ "$". "cd". target } | #ChangeDirectory target: target ]
                 ?[ | #{ "$". "ls" } |
                     // Grab the lines until the next command
@@ -101,7 +101,7 @@ impl Command {
 
                     #ListDirectory items: files
                 ]
-            } $ value.
+            }.
 
             commands append: command.
         ].

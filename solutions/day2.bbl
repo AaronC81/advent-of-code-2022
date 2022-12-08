@@ -9,21 +9,21 @@ enum Outcome {
 impl Outcome {
     /// Converts a character from the input to the corresponding play. (For part 2)
     static func parse: char {
-        Match value: char toOneOf: #{
+        char match mustBeOneOf: #{
             ?[ |"X"| #Loss ]
             ?[ |"Y"| #Draw ]
             ?[ |"Z"| #Win  ]
-        } $ value
+        }
     }
 
     /// The score achieved from this outcome. (Must be multiplied with your play score to get a
     /// total score for a round.)
     func score {
-        Match value: self toOneOf: #{
+        self match mustBeOneOf: #{
             ?[ | #Win  | 6 ]
             ?[ | #Loss | 0 ]
             ?[ | #Draw | 3 ]
-        } $ value
+        }
     }
 
     /// Determines the `Play` that you need to use against your opponent's given play, in order to
@@ -44,19 +44,19 @@ enum Play {
 impl Play {
     /// Converts a character from the input to the corresponding play.
     static func parse: char {
-        Match value: char toOneOf: #{
+        char match mustBeOneOf: #{
             ?[ |"A"| #Rock     ]
             ?[ |"X"| #Rock     ]
             ?[ |"B"| #Paper    ]
             ?[ |"Y"| #Paper    ]
             ?[ |"C"| #Scissors ]
             ?[ |"Z"| #Scissors ]
-        } $ value
+        }
     }
 
     /// Determines the `Outcome` if you play this against your opponent's given play.
     func outcomeVersus: other {
-        Match value: #{ self. other } toOneOf: #{
+        #{ self. other } match mustBeOneOf: #{
             ?[ | #{ #Rock. #Scissors } | Outcome#Win ]
             ?[ | #{ #Scissors. #Rock } | Outcome#Loss ]
 
@@ -67,17 +67,17 @@ impl Play {
             ?[ | #{ #Paper. #Scissors } | Outcome#Loss ]
 
             ?[ | _ | Outcome#Draw ]
-        } $ value
+        }
     }
 
     /// The score achieved from this play. (Must be multiplied with your outcome score to get a
     /// total score for a round.)
     func score {
-        Match value: self toOneOf: #{
+        self match mustBeOneOf: #{
             ?[ | #Rock     | 1 ]
             ?[ | #Paper    | 2 ]
             ?[ | #Scissors | 3 ]
-        } $ value
+        }
     }
 }
 
