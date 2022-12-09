@@ -1,0 +1,27 @@
+struct Point x y.
+impl Point {
+    func isDiagonallyAdjacentTo: other {
+        #{ (self x - other x $ abs). (self y - other y $ abs) } equals: #{ 1 1 }
+    }
+
+    func right {
+        Point x: (self x + 1) y: y
+    }
+}
+
+struct Rope head tail.
+impl Rope {
+    func moveRight {
+        // If the head and tail are in the same place, or are going to be after the move, the tail
+        // doesn't need to move - otherwise...
+        (self head equals: self tail) or: (self head right equals: self tail) $ ifFalse: [
+            // TODO: diagonal check
+
+            // Snap the tail to the head's old position
+            self tail = self head.
+        ]
+
+        // Actually move the head
+        self head = self head right.
+    }
+}
