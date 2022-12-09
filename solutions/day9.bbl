@@ -1,27 +1,95 @@
+// TODO: add to stdlib
+impl Integer {
+    func abs {
+        self lessThan: 0 $ ifTrue: [ self negate ] else: [ self ]
+    }
+}
+
+enum Direction {
+    Up.
+    Down.
+    Left.
+    Right.
+}
+
 struct Point x y.
 impl Point {
-    func isDiagonallyAdjacentTo: other {
-        #{ (self x - other x $ abs). (self y - other y $ abs) } equals: #{ 1 1 }
+    static func zero {
+        Point x: 0 y: 0
+    }
+
+    func distanceTo: other {
+        #{ (self x - other x $ abs). (self y - other y $ abs) }
     }
 
     func right {
         Point x: (self x + 1) y: y
     }
+
+    func clone {
+        Point x: self x y: self y
+    }
 }
 
 struct Rope head tail.
 impl Rope {
-    func moveRight {
-        // If the head and tail are in the same place, or are going to be after the move, the tail
-        // doesn't need to move - otherwise...
-        (self head equals: self tail) or: (self head right equals: self tail) $ ifFalse: [
-            // TODO: diagonal check
+    func move: dir {
+        oldHead = self head clone.
+        dir match mustBeOneOf: #{
+            ?[ | Direction#Up    | self head y = self head y - 1 ]
+            ?[ | Direction#Down  | self head y = self head y + 1 ]
+            ?[ | Direction#Left  | self head x = self head x - 1 ]
+            ?[ | Direction#Right | self head x = self head x + 1 ]
+        }.
+        self recalculateTail: oldHead.
+    }
 
-            // Snap the tail to the head's old position
-            self tail = self head.
-        ]
+    func recalculateTail: oldHead {
+        // Note: head should've been moved before calling this
+        // also expects one movement at a time
+        moveTail = false.
 
-        // Actually move the head
-        self head = self head right.
+        // The difference movement cases between the head and tail are...
+        self head distanceTo: self tail $ match mustBeOneOf: #{
+            // They're in the same place - nothing needs to happen
+            ?[ | #{ 0 0 } | ]
+
+            // They're immediately adjacent - nothing needs to happen
+            ?[ | #{ 1 0 } | ]
+            ?[ | #{ 0 1 } | ]
+
+            // They're immediately diagonal - nothing needs to happen
+            ?[ | #{ 1 1 } | ]
+            ?[ | #{ 1 1 } | ]
+
+            // The head is further away than any of these - movement needed!
+            ?[ |_| moveTail = true ]
+        }.
+
+        moveTail ifTrue: [ self tail = oldHead ]
     }
 }
+
+// TODO: use `AOC readInput:`, was having problems with it on Windows
+input = File open: "input/day9" in: &readAllText $ split: "\n" $ map: [ |line| line split: " " ].
+moves = #{}.
+input forEach: [ |i|
+    move = i first match mustBeOneOf: #{
+        ?[ | "U" | Direction#Up    ]
+        ?[ | "D" | Direction#Down  ]
+        ?[ | "L" | Direction#Left  ]
+        ?[ | "R" | Direction#Right ]
+    }.
+    i last toInteger times: [
+        moves append: move
+    ].
+].
+
+rope = Rope head: Point zero tail: Point zero.
+visitedPoints = #{ Point zero }.
+moves forEach: [ |move|
+    rope move: move.
+    visitedPoints contains: rope tail $ ifFalse: [ visitedPoints append: rope tail. ].
+].
+
+Console println: visitedPoints length.
