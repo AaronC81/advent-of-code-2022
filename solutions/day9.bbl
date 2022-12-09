@@ -1,27 +1,35 @@
 Program evalFile: "../utils/aoc.bbl".
 
+/// An unordered hash-based set, with (relatively) fast insertion by separating items into buckets.
+///
+/// To store an item in the set, it must have a `hash` method which returns an integer.
 struct Set buckets.
 impl Set {
+    /// Creates a new set with a fixed number of buckets.
     static func newWithBuckets: n {
         set = Set buckets: #{}.
         n times: [ set buckets append: #{} ].
         set
     }
 
-    func bucketFor: item {
-        self buckets get: (item hash $ modulo: self buckets length)
-    }
-
+    /// Inserts an item into the set.
     func insert: item {
         bucket = self bucketFor: item.
         bucket contains: item $ ifFalse: [ bucket append: item ].
     }
 
+    /// Gets the number of items in the set.
     func length {
         self buckets map: &length $ sum
     }
+
+    /// Returns the bucket that a particular item should be placed in, based on its hash value.
+    private func bucketFor: item {
+        self buckets get: (item hash $ modulo: self buckets length)
+    }
 }
 
+/// A direction in which a knot in the rope could move.
 enum Direction {
     Up.
     Down.
@@ -29,31 +37,35 @@ enum Direction {
     Right.
 }
 
+// A 2D point.
 struct Point x y.
 impl Point {
+    /// The point (0, 0).
     static func zero {
         Point x: 0 y: 0
     }
 
+    /// Computes the distance between two points, and returns a 2-element array of the form
+    /// `#{ (x distance) (y distance) }`.
     func distanceTo: other {
         #{ (self x - other x $ abs). (self y - other y $ abs) }
     }
 
-    func right {
-        Point x: (self x + 1) y: y
-    }
-
+    /// Copies this point into a new instance.
     func clone {
         Point x: self x y: self y
     }
 
+    /// Computes a hash value for this point, for storing it in a `Set`.
     func hash {
         self x * self y $ abs
     }
 }
 
+/// A length of rope between two knots.
 struct Rope head tail.
 impl Rope {
+    /// Moves the head of the rope in a `Direction`, and updates the tail to follow it.
     func move: dir {
         oldHead = self head clone.
         dir match mustBeOneOf: #{
@@ -65,9 +77,9 @@ impl Rope {
         self recalculateTail: oldHead.
     }
 
-    func recalculateTail: oldHead {
-        // Note: head should've been moved before calling this
-        // also expects one movement at a time
+    /// Given an old head position, and assuming that the head position has already been updated,
+    /// updates the tail position to follow the head.
+    private func recalculateTail: oldHead {
         moveTail = false.
 
         // The difference movement cases between the head and tail are...
