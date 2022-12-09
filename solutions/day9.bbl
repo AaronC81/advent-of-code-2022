@@ -22,13 +22,6 @@ impl Set {
     }
 }
 
-// TODO: add to stdlib
-impl Integer {
-    func abs {
-        self lessThan: 0 $ ifTrue: [ self negate ] else: [ self ]
-    }
-}
-
 enum Direction {
     Up.
     Down.
