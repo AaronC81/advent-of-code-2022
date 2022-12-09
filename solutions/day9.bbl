@@ -1,5 +1,27 @@
 Program evalFile: "../utils/aoc.bbl".
 
+struct Set buckets.
+impl Set {
+    static func newWithBuckets: n {
+        set = Set buckets: #{}.
+        n times: [ set buckets append: #{} ].
+        set
+    }
+
+    func bucketFor: item {
+        self buckets get: (item hash $ modulo: self buckets length)
+    }
+
+    func insert: item {
+        bucket = self bucketFor: item.
+        bucket contains: item $ ifFalse: [ bucket append: item ].
+    }
+
+    func length {
+        self buckets map: &length $ sum
+    }
+}
+
 // TODO: add to stdlib
 impl Integer {
     func abs {
@@ -30,6 +52,10 @@ impl Point {
 
     func clone {
         Point x: self x y: self y
+    }
+
+    func hash {
+        self x * self y $ abs
     }
 }
 
@@ -90,10 +116,11 @@ impl Day9 {
         ].
 
         rope = Rope head: Point zero tail: Point zero.
-        visitedPoints = #{ Point zero }.
+        visitedPoints = Set newWithBuckets: 1000.
+        visitedPoints insert: Point zero.
         moves forEach: [ |move|
             rope move: move.
-            visitedPoints contains: rope tail $ ifFalse: [ visitedPoints append: rope tail. ].
+            visitedPoints insert: rope tail.
         ].
         visitedPoints length
     }
