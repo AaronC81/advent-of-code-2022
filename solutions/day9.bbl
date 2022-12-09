@@ -1,3 +1,5 @@
+Program evalFile: "../utils/aoc.bbl".
+
 // TODO: add to stdlib
 impl Integer {
     func abs {
@@ -70,26 +72,31 @@ impl Rope {
     }
 }
 
-// TODO: use `AOC readInput:`, was having problems with it on Windows
-input = File open: "input/day9" in: &readAllText $ split: "\n" $ map: [ |line| line split: " " ].
-moves = #{}.
-input forEach: [ |i|
-    move = i first match mustBeOneOf: #{
-        ?[ | "U" | Direction#Up    ]
-        ?[ | "D" | Direction#Down  ]
-        ?[ | "L" | Direction#Left  ]
-        ?[ | "R" | Direction#Right ]
-    }.
-    i last toInteger times: [
-        moves append: move
-    ].
-].
+struct Day9.
+impl Day9 {
+    static func part1 {
+        input = AOC readInput: 9 $ split: "\n" $ map: [ |line| line split: " " ].
+        moves = #{}.
+        input forEach: [ |i|
+            move = i first match mustBeOneOf: #{
+                ?[ | "U" | Direction#Up    ]
+                ?[ | "D" | Direction#Down  ]
+                ?[ | "L" | Direction#Left  ]
+                ?[ | "R" | Direction#Right ]
+            }.
+            i last toInteger times: [
+                moves append: move
+            ].
+        ].
 
-rope = Rope head: Point zero tail: Point zero.
-visitedPoints = #{ Point zero }.
-moves forEach: [ |move|
-    rope move: move.
-    visitedPoints contains: rope tail $ ifFalse: [ visitedPoints append: rope tail. ].
-].
+        rope = Rope head: Point zero tail: Point zero.
+        visitedPoints = #{ Point zero }.
+        moves forEach: [ |move|
+            rope move: move.
+            visitedPoints contains: rope tail $ ifFalse: [ visitedPoints append: rope tail. ].
+        ].
+        visitedPoints length
+    }
+}
 
-Console println: visitedPoints length.
+Console println: Day9 part1.
