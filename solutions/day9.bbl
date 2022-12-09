@@ -1,5 +1,10 @@
 Program evalFile: "../utils/aoc.bbl".
 
+impl Integer {
+    func isPositive { self greaterThan: 0 }
+    func isNegative { self lessThan: 0 }
+}
+
 /// An unordered hash-based set, with (relatively) fast insertion by separating items into buckets.
 ///
 /// To store an item in the set, it must have a `hash` method which returns an integer.
@@ -46,9 +51,10 @@ impl Point {
     }
 
     /// Computes the distance between two points, and returns a 2-element array of the form
-    /// `#{ (x distance) (y distance) }`.
+    /// `#{ (x distance) (y distance) }`. The distance values are negative if the other point is
+    // left/up from this one, and positive it's right/down.
     func distanceTo: other {
-        #{ (self x - other x $ abs). (self y - other y $ abs) }
+        #{ (self x - other x). (self y - other y) }
     }
 
     /// Copies this point into a new instance.
@@ -74,38 +80,118 @@ impl Rope {
             ?[ | Direction#Left  | self head x = self head x - 1 ]
             ?[ | Direction#Right | self head x = self head x + 1 ]
         }.
-        self recalculateTail: oldHead.
+        self recalculateTail.
     }
 
-    /// Given an old head position, and assuming that the head position has already been updated,
-    /// updates the tail position to follow the head.
-    private func recalculateTail: oldHead {
-        moveTail = false.
-
+    func recalculateTail {
         // The difference movement cases between the head and tail are...
         self head distanceTo: self tail $ match mustBeOneOf: #{
             // They're in the same place - nothing needs to happen
             ?[ | #{ 0 0 } | ]
 
             // They're immediately adjacent - nothing needs to happen
-            ?[ | #{ 1 0 } | ]
-            ?[ | #{ 0 1 } | ]
+            ?[ | #{  1  0 } | ]
+            ?[ | #{ -1  0 } | ]
+            ?[ | #{  0  1 } | ]
+            ?[ | #{  0 -1 } | ]
 
             // They're immediately diagonal - nothing needs to happen
-            ?[ | #{ 1 1 } | ]
-            ?[ | #{ 1 1 } | ]
+            ?[ | #{  1  1 } | ]
+            ?[ | #{ -1  1 } | ]
+            ?[ | #{  1 -1 } | ]
+            ?[ | #{ -1 -1 } | ]
 
             // The head is further away than any of these - movement needed!
-            ?[ |_| moveTail = true ]
-        }.
+            // Figure out how to move it...
+            ?[ | #{ x. y } |
+                // Figure out the offset to apply
 
-        moveTail ifTrue: [ self tail = oldHead ]
+                // Moved diagonally, predominantly right
+                (x abs greaterThan: y abs) and: x isPositive $ ifTrue: [
+                    self tail x = self head x - 1.
+                    self tail y = self head y.
+                    return null.
+                ].
+                
+                // Moved diagonally, predominantly left
+                (x abs greaterThan: y abs) and: x isNegative $ ifTrue: [
+                    self tail x = self head x + 1.
+                    self tail y = self head y.
+                    return null.
+                ].
+
+                // Moved diagonally, predominantly downwards
+                (y abs greaterThan: x abs) and: y isPositive $ ifTrue: [ 
+                    self tail x = self head x.
+                    self tail y = self head y - 1.
+                    return null.
+                ].
+
+                // Moved diagonally, predominantly upwards
+                (y abs greaterThan: x abs) and: y isNegative $ ifTrue: [
+                    self tail x = self head x.
+                    self tail y = self head y + 1.
+                    return null.
+                ].
+
+                // Moved diagonally, exactly right-down
+                (x abs equals: y abs) and: x isPositive $ and: y isPositive $ ifTrue: [
+                    self tail x = self head x - 1.
+                    self tail y = self head y - 1.
+                    return null.
+                ].
+
+                // Moved diagonally, exactly right-up
+                (x abs equals: y abs) and: x isPositive $ and: y isNegative $ ifTrue: [
+                    self tail x = self head x - 1.
+                    self tail y = self head y + 1.
+                    return null.
+                ].
+
+                // Moved diagonally, exactly left-down
+                (x abs equals: y abs) and: x isNegative $ and: y isPositive $ ifTrue: [
+                    self tail x = self head x + 1.
+                    self tail y = self head y - 1.
+                    return null.
+                ].
+
+                // Moved diagonally, exactly left-up
+                (x abs equals: y abs) and: x isNegative $ and: y isNegative $ ifTrue: [
+                    self tail x = self head x + 1.
+                    self tail y = self head y + 1.
+                    return null.
+                ].
+
+                Program error: "no movement class"
+            ]
+        }.
+    }
+}
+
+struct RopeSequence ropes.
+impl RopeSequence {
+    static func newOfLength: n {
+        ropes = #{}.
+        n times: [ ropes append: (Rope head: Point zero tail: Point zero) ].
+        RopeSequence ropes: ropes
+    }
+
+    func move: dir {
+        // Move the first rope only
+        self ropes first move: dir.
+
+        // Update and recalculate the subsequent ropes
+        self ropes length - 1 $ times: [ |n|
+            thisRope = self ropes get: (n + 1).
+            thisRope head = self ropes get: n $ tail.
+            thisRope recalculateTail.
+        ]
     }
 }
 
 struct Day9.
 impl Day9 {
-    static func part1 {
+    static func moves {
         input = AOC readInput: 9 $ split: "\n" $ map: [ |line| line split: " " ].
         moves = #{}.
         input forEach: [ |i|
@@ -119,16 +205,54 @@ impl Day9 {
                 moves append: move
             ].
         ].
+        moves
+    }
 
+    static func part1 {
         rope = Rope head: Point zero tail: Point zero.
         visitedPoints = Set newWithBuckets: 1000.
         visitedPoints insert: Point zero.
-        moves forEach: [ |move|
+
+        self moves forEach: [ |move|
             rope move: move.
-            visitedPoints insert: rope tail.
+            visitedPoints insert: rope tail clone.
+        ].
+        visitedPoints length
+    }
+
+    static func part2 {
+        ropes = RopeSequence newOfLength: 10.
+        visitedPoints = Set newWithBuckets: 1000.
+        visitedPoints insert: Point zero.
+
+        self moves forEach: [ |move|
+            ropes move: move.
+            visitedPoints insert: ropes ropes last head clone.
+
+            // Visualise
+            // (Correct size for larger input)
+            // grid = #{}.
+            // 21 times: [
+            //     row = #{}.
+            //     27 times: [ row append: "." ].
+            //     grid append: row.
+            // ].
+            // visitedPoints buckets forEach: [ |bucket|
+            //     bucket forEach: [ |point|
+            //         grid get: (15 + point y) $ set: (point x + 12) value: "#".
+            //     ]
+            // ].
+            // grid get: (15 + 0) $ set: (12 + 0) value: "s".
+            // ropes ropes withIndex reverse forEach: ![ |#{ n. rope }|
+            //     grid get: (15 + rope head y) $ set: (rope head x + 12) value: n repr.
+            // ].
+            // Console println: (grid map: &join $ join: "\n").
+            // Console println: ("Current tail: " concat: ropes ropes last head clone repr).
+            // Console println: "".
         ].
         visitedPoints length
     }
 }
 
 Console println: Day9 part1.
+Console println: Day9 part2.
