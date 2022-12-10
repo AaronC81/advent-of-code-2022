@@ -1,0 +1,140 @@
+Program evalFile: "../utils/aoc.bbl".
+
+enum Instruction {
+    NoOp.
+    AddX amount.
+}
+impl Instruction {
+    static func parse: line {
+        line split: " " $ match mustBeOneOf: #{
+            ?[ | #{ "noop" }      | #NoOp ]
+            ?[ | #{ "addx". amt } | #AddX amount: amt toInteger ]
+        }
+    }
+
+    func cyclesToExecute {
+        self match mustBeOneOf: #{
+            ?[ | #NoOp | 1 ]
+            ?[ | #AddX | 2 ]
+        }
+    }
+}
+
+/// An instruction which is currently being executed, with the number of cycles it has left to
+/// complete executing.
+struct PendingInstruction instruction cyclesRemaining.
+
+/// The computer which can execute instructions.
+///
+/// The structure of this type is a bit weird, because I thought the computer was pipelined when I
+/// first tried this! It isn't, so this is somewhat overengineered...
+struct Computer x pendingInstructions.
+impl Computer {
+    /// Creates an initial computer.
+    static func new {
+        Computer
+            x: 1
+            pendingInstructions: #{}.
+    }
+
+    /// Executes a list of instructions, calling a callback on each cycle.
+    func executeAll: instructions cycleCallback: fn {
+        // For each instruction
+        instructions forEach: [ |instruction|
+            // Start executing it...
+            self startExecuting: instruction.
+            
+            // ...and wait for it to finish
+            [ self pendingInstructions length greaterThan: 0 ] whileTrue: [
+                fn call.
+                self cycle.
+            ].
+        ].
+    }
+
+    private func startExecuting: instruction {
+        p = PendingInstruction
+            instruction: instruction
+            cyclesRemaining: instruction cyclesToExecute.
+        self pendingInstructions append: p.
+    }
+
+    private func cycle {
+        self pendingInstructions = self pendingInstructions
+            map: [ |pIns|
+                // Decrement the cycles remaining
+                pIns cyclesRemaining = pIns cyclesRemaining - 1.
+
+                // If the count has reached 0, execute the instruction and return null so that this
+                // gets removed from the list
+                pIns cyclesRemaining equals: 0 $
+                    ifTrue: [
+                        self finishExecuting: pIns instruction.
+                        null
+                    ]
+                    else: [ pIns ]
+            ]
+            $ reject: &isNull
+    }
+
+    private func finishExecuting: instruction {
+        instruction match mustBeOneOf: #{
+            ?[ | Instruction#NoOp |
+                // Nothing to do!
+            ]
+            ?[ | Instruction#AddX |
+                // Add the amount to the X register
+                self x = self x + instruction amount.
+            ]
+        }
+    }
+}
+
+struct Day10.
+impl Day10 {
+    static func instructions {
+        AOC readInput: 10 $ split: "\n" $ map: [ |l| Instruction parse: l ].
+    }
+
+    static func part1 {
+        c = Computer new.
+        signalStrengths = 0.
+        i = 0.
+        c executeAll: self instructions cycleCallback: [
+            i = i + 1.
+
+            (i - 20) modulo: 40 $ equals: 0 $ ifTrue: [
+                signalStrengths = signalStrengths + (i * c x).
+            ].
+        ].
+
+        signalStrengths
+    }
+
+    static func part2 {
+        // Create a display
+        display = Array newFrom: [ Array newOf: "." length: 40 ] length: 6.
+
+        c = Computer new.
+        x = 0.
+        y = 0.
+        c executeAll: self instructions cycleCallback: [
+            // Is the current X-Y position within the three-pixel window set by the X register?
+            (c x - x $ abs) lessThanOrEquals: 1 $ ifTrue: [
+                display get: y $ set: x value: "#".
+            ].
+
+            // Move to the next pixel position
+            x = x + 1.
+            x equals: 40 $ ifTrue: [
+                x = 0.
+                y = y + 1.
+            ].
+        ].
+
+        display map: &join $ join: "\n".
+    }
+}
+
+Console println: Day10 part1.
+Console println: Day10 part2.
