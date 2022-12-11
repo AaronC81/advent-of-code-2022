@@ -1,0 +1,98 @@
+Program evalFile: "../utils/aoc.bbl".
+
+enum Operation {
+    Add amount.
+    Multiply amount.
+    Square.
+}
+
+struct Monkey items operation divisor throwIfDivisible throwIfNotDivisible inspectCounter.
+impl Monkey {
+    static func parse: str {
+        lines = str split: "\n".
+
+        // Don't care about the first line - just has a monkey index
+
+        // Second line:
+        //                 .-- Split on first
+        //                 v .----. Split on comma and convert to integers
+        //   Starting items: 79, 98 
+        items = lines get: 1 $ split: ":" $ last strip split: "," $ map: [ |i| i strip toInteger ].
+
+        // Third line:
+        //   Operation: new = old * 19
+        operation = lines get: 2 $ split: ":" $ last strip split: " " $ match mustBeOneOf: #{
+            ?[ | #{ "new" "=" "old" "*" "old" } | Operation#Square ]
+            ?[ | #{ "new" "=" "old" "*". amt  } | Operation#Multiply amount: amt toInteger ]
+            ?[ | #{ "new" "=" "old" "+". amt  } | Operation#Add amount: amt toInteger ]
+        }.
+
+        // Fourth line          vv
+        //   Test: divisible by 23
+        divisor = lines get: 3 $ split: " " $ last toInteger.
+
+        // Fifth line                 v
+        //   If true: throw to monkey 2
+        throwIfDivisible = lines get: 4 $ split: " " $ last toInteger.
+
+        // Sixth line                  v
+        //   If false: throw to monkey 3
+        throwIfNotDivisible = lines get: 5 $ split: " " $ last toInteger.
+
+        self
+            items: items
+            operation: operation
+            divisor: divisor
+            throwIfDivisible: throwIfDivisible
+            throwIfNotDivisible: throwIfNotDivisible
+            inspectCounter: 0
+    }
+
+    func takeTurn: monkies {
+        // Inspect each of our items
+        self items = self items forEach: [ |item|
+            // Apply the operation to it
+            item = self operation match mustBeOneOf: #{
+                ?[ | Operation#Add amount: amt      | item + amt  ]
+                ?[ | Operation#Multiply amount: amt | item * amt  ]
+                ?[ | Operation#Square               | item * item ]
+            }.
+
+            // Phew, it wasn't damaged! Divide by 3
+            item = item / 3.
+
+            // Throw it to a monkey based on whether it's divisible by its divisor or not
+            monkeyIndex = item modulo: self divisor $ equals: 0
+                $ ifTrue: [ self throwIfDivisible ] else: [ self throwIfNotDivisible ].
+            
+            monkies get: monkeyIndex $ items append: item.
+
+            self inspectCounter = self inspectCounter + 1.
+        ].
+
+        // Clear the list of items, since we threw them all
+        self items = #{}.
+    }
+}
+
+struct Day11.
+impl Day11 {
+    static func monkies {
+        AOC readInput: 11 $ split: "\n\n" $ map: [ |block| Monkey parse: block ].
+    }
+
+    static func part1 {
+        monkies = self monkies.
+
+        20 times: [
+            monkies forEach: [ |monkey|
+                monkey takeTurn: monkies.
+            ].
+        ].
+
+        highestInspectCounters = monkies map: &inspectCounter $ sort reverse take: 2.
+        highestInspectCounters first * highestInspectCounters last.
+    }
+}
+
+Console println: Day11 part1.
