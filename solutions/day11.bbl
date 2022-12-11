@@ -1,5 +1,6 @@
 Program evalFile: "../utils/aoc.bbl".
 
+/// An operation applied to the worry level of an item that a monkey is holding.
 enum Operation {
     Add amount.
     Multiply amount.
@@ -8,6 +9,7 @@ enum Operation {
 
 struct Monkey items operation divisor throwIfDivisible throwIfNotDivisible inspectCounter.
 impl Monkey {
+    /// Parse a chunk of text representing a monkey.
     static func parse: str {
         lines = str split: "\n".
 
@@ -48,7 +50,9 @@ impl Monkey {
             inspectCounter: 0
     }
 
-    func takeTurn: monkies {
+    /// Takes a monkey's turn, throwing items to other monkeys provided in an array. Between the
+    /// operation and divisor check, executes the given post-operation function.
+    func takeTurn: monkies postOperation: fn {
         // Inspect each of our items
         self items = self items forEach: [ |item|
             // Apply the operation to it
@@ -58,8 +62,8 @@ impl Monkey {
                 ?[ | Operation#Square               | item * item ]
             }.
 
-            // Phew, it wasn't damaged! Divide by 3
-            item = item / 3.
+            // Execute our post-operation function
+            item = fn call: item.
 
             // Throw it to a monkey based on whether it's divisible by its divisor or not
             monkeyIndex = item modulo: self divisor $ equals: 0
@@ -77,6 +81,7 @@ impl Monkey {
 
 struct Day11.
 impl Day11 {
+    /// Loads monkies from the input data.
     static func monkies {
         AOC readInput: 11 $ split: "\n\n" $ map: [ |block| Monkey parse: block ].
     }
@@ -86,13 +91,29 @@ impl Day11 {
 
         20 times: [
             monkies forEach: [ |monkey|
-                monkey takeTurn: monkies.
+                monkey takeTurn: monkies postOperation: [ |i| i / 3 ].
             ].
         ].
 
-        highestInspectCounters = monkies map: &inspectCounter $ sort reverse take: 2.
-        highestInspectCounters first * highestInspectCounters last.
+        monkies map: &inspectCounter $ sort reverse take: 2 $ product
+    }
+
+    static func part2 {
+        monkies = self monkies.
+
+        // The divisibility check still works if we modulo each worry level by the product of all 
+        // the divisors we'll be checking against
+        globalWrap = Day11 monkies map: &divisor $ product.
+
+        10000 times: [
+            monkies forEach: [ |monkey|
+                monkey takeTurn: monkies postOperation: [ |i| i modulo: globalWrap ].
+            ].
+        ].
+
+        monkies map: &inspectCounter $ sort reverse take: 2 $ product
     }
 }
 
 Console println: Day11 part1.
+Console println: Day11 part2.
