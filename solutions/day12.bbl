@@ -1,0 +1,130 @@
+struct ElevationMap points start end.
+impl ElevationMap {
+    static func parse: str {
+        start = null.
+        end = null.
+
+        points = str split: "\n" $ withIndex map: ![ | #{ y. line }|
+            line chars withIndex map: ![ | #{ x. c } |
+                // Handle start and end specially, mapping them to elevations and storing points
+                c equals: "S" $ ifTrue: [
+                    c = "a".
+                    start = #{ x. y }.
+                ].
+                c equals: "E" $ ifTrue: [
+                    c = "z".
+                    end = #{ x. y }.
+                ].
+
+                c toAsciiCode - "a" toAsciiCode + 1
+            ]
+        ].
+
+        self points: points start: start end: end
+    }
+
+    func width { self points first length }
+    func height { self points length }
+
+    /// For each point, create an array of the points it's possible to move to from that point.
+    func possibleMoveMap {
+        // Y, then X, gives an array of points you can move to
+        arr = self new2DArrayFrom: [ #{} ].
+
+        // For each point...
+        self width times: [ |x|
+            self height times: [ |y|
+                myElev = self elevation: #{ x. y }.
+
+                // Get all adjacent points
+                adjs = self pointsAdjacentTo: #{ x. y }.
+                
+                // Filter to the ones whose elevation means we can move there
+                adjs = adjs filter: [ |adj|
+                    adjElev = self elevation: adj.
+
+                    // Either it's less than or equal to, or exactly one greater
+                    (adjElev lessThanOrEquals: myElev) or: (adjElev equals: (myElev + 1))
+                ].
+
+                // Add to result
+                arr get: y $ set: x value: adjs.
+            ]
+        ].
+        
+        arr
+    }
+
+    /// Given a point, gives a list of the valid points which are adjacent to it.
+    func pointsAdjacentTo: point {
+        adjs = #{}.
+        point first equals: 0                 $ ifFalse: [ adjs append: #{ point first - 1. point last     } ].
+        point first equals: (self width  - 1) $ ifFalse: [ adjs append: #{ point first + 1. point last     } ].
+        point last  equals: 0                 $ ifFalse: [ adjs append: #{ point first.     point last - 1 } ].
+        point last  equals: (self height - 1) $ ifFalse: [ adjs append: #{ point first.     point last + 1 } ].
+        adjs
+    }
+
+    /// Gets the elevation for an #{ x. y } point
+    func elevation: point {
+        self points get: point last $ get: point first
+    }
+
+    func new2DArrayFrom: fn {
+        Array newFrom: [ Array newFrom: fn length: self width ] length: self height
+    }
+
+    func shortestPaths {
+        // Implementation of Djikstra's algorithm largely transcribed from here:
+        //   https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
+        moveMap = self possibleMoveMap.
+
+        dist = self new2DArrayFrom: [ 10000000 ].
+        prev = self new2DArrayFrom: [ null ].
+        q = #{}
+        self width times: [ |x|
+            self height times: [ |y|
+                q append: #{ x. y }.
+            ]
+        ].
+        dist get: self start last $ set: self start first value: 0.
+        
+        [ q length greaterThan: 0 ] whileTrue: [
+            Console println: q length.
+
+            // Find item with smallest best distance and remove it
+            ui = q withIndex minBy: ![ | #{ _. pt } | dist get: pt last $ get: pt first ].
+            u = ui last.
+            q delete: ui first.
+
+            // Iterate over possible moves from here
+            moveMap get: u last $ get: u first $ forEach: [ |v|
+                alt = (dist get: u last $ get: u first) + 1.
+                alt lessThan: (dist get: v last $ get: v first) $ ifTrue: [
+                    dist get: v last $ set: v first value: alt.
+                    prev get: v last $ set: v first value: u.
+                ].
+            ].
+        ].
+
+        dist
+    }
+}
+
+struct Day12.
+impl Day12 {
+    static func shortestPaths {
+        input = File open: "input/day12" in: &readAllText. // TODO Windows again
+        ElevationMap parse: input $ shortestPaths.
+    }
+
+    static func part1 {
+        self shortestPaths get: self end last $ get: self end first
+    }
+
+    static func part2 {
+        // TODO
+    }
+}
+
+Console println: Day12 part1.
