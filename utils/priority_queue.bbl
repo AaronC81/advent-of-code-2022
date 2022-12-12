@@ -1,0 +1,114 @@
+/// A binary min-heap implementation of a priority queue.
+///
+/// The items stored in this queue must have a method named `priority`, which returns an object
+/// implementing `Orderable`.
+///
+/// If you don't want to implement your own type for this, you can use `PriorityBox` to wrap any
+/// arbitrary object with a fixed priority.
+struct PriorityQueue items.
+impl PriorityQueue {
+    /// Creates an empty priority queue.
+    static func new {
+        self items: #{}
+    }
+    
+    /// Gets the lowest-priority item in this queue.
+    func min {
+        self items get: 0
+    }
+
+    /// Inserts an item into this queue.
+    func insert: item {
+        self items append: item.
+        self heapifyUp: self items length - 1.
+    }
+
+    /// Gets the number of items in this queue.
+    func length {
+        self items length
+    }
+
+    /// Removes and returns the lowest-priority item from this queue.
+    func pop {
+        // Get the current minimum item
+        item = self min.
+
+        // Replace existing root with last item, unless the queue is empty now
+        self items length greaterThan: 1 $ ifTrue: [
+            newRoot = self items pop.
+            self items set: 0 value: newRoot.
+            self heapifyDown: 0.
+        ] else: [
+            self items = #{}.
+        ].
+
+        item
+    }
+
+    /// Rebalances the items above the given index.
+    private func heapifyUp: i {
+        // The top item is implicitly heapified
+        i lessThan: 1 $ ifTrue: [ return null ].
+
+        // If this item's parent is greater than it...
+        parentIndex = self indexParent: i.
+        (self items get: parentIndex) priority greaterThan: (self items get: i) priority $ ifTrue: [
+            // Swap them
+            tmp = self items get: parentIndex.
+            self items set: parentIndex value: (self items get: i).
+            self items set: i value: tmp.
+
+            // Recurse upwards
+            self heapifyUp: parentIndex.
+        ].
+    }
+
+    /// Rebalances the items below the given index.
+    private func heapifyDown: i {
+        // Grab some stuff we'll need
+        this = self items get: i.
+        leftIndex = self indexLeft: i.
+        rightIndex = self indexRight: i.
+        left = self items get: leftIndex.
+        right = self items get: rightIndex.
+        hasLeft = leftIndex lessThan: self items length.
+        hasRight = rightIndex lessThan: self items length.
+
+        // Do we have an item on the left...
+        hasLeft
+        // and is it less than this one...
+        andAlso: [ left priority lessThan: this priority ] $
+        // and, if we have an item on the right, is it less than the left one?
+        andAlso: [ hasRight not orElse: [ left priority lessThan: right priority ] ] $
+        ifTrue: [
+            // Swap this with the left item
+            self items set: leftIndex value: this.
+            self items set: i value: left.
+
+            // Recurse downwards
+            self heapifyDown: leftIndex.
+        ] else: [
+            // Do we have an item on the right, and is it less than this one?
+            hasRight andAlso: [ right priority lessThan: this priority ] $ ifTrue: [
+                // Swap this with the right item
+                self items set: rightIndex value: this.
+                self items set: i value: right.
+
+                // Recurse downwards
+                self heapifyDown: rightIndex.
+            ]
+        ]
+    }
+
+    private func indexParent: i { (i - 1) / 2 }
+    private func indexLeft: i   { (2 * i) + 1 }
+    private func indexRight: i  { (2 * i) + 2 }
+}
+
+/// A wrapper allowing an arbitrary object to be stored in a `PriorityQueue`.
+struct PriorityBox value priority.
+impl PriorityBox {
+    /// Creates a new priority box where an item's priority is the same as the item itself, assuming
+    /// the item implements `Orderable`.
+    static func fromSelf: v { self value: v priority: v }
+}

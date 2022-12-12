@@ -1,5 +1,9 @@
+Program evalFile: "../utils/aoc.bbl".
+Program evalFile: "../utils/priority_queue.bbl".
+
 struct ElevationMap points start end.
 impl ElevationMap {
+    /// Parses a 2D map string into a map instance.
     static func parse: str {
         start = null.
         end = null.
@@ -66,46 +70,46 @@ impl ElevationMap {
         adjs
     }
 
-    /// Gets the elevation for an #{ x. y } point
+    /// Gets the elevation for an #{ x. y } point.
     func elevation: point {
         self points get: point last $ get: point first
     }
 
+    /// Constructs a 2D array whose width and height matches this map, obtaining values by executing
+    /// the given function.
     func new2DArrayFrom: fn {
         Array newFrom: [ Array newFrom: fn length: self width ] length: self height
     }
 
+    /// Returns a map of the shortest path from each point to the end.
     func shortestPaths {
-        // Implementation of Djikstra's algorithm largely transcribed from here:
-        //   https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
         moveMap = self possibleMoveMap.
 
         dist = self new2DArrayFrom: [ 10000000 ].
-        prev = self new2DArrayFrom: [ null ].
-        q = #{}
-        self width times: [ |x|
-            self height times: [ |y|
-                q append: #{ x. y }.
-            ]
-        ].
-        dist get: self end last $ set: self end first value: 0.
-        
-        [ q length greaterThan: 0 ] whileTrue: [
-            Console println: q length.
+        seen = self new2DArrayFrom: [ false ].
+        queue = PriorityQueue new.
 
-            // Find item with smallest best distance and remove it
-            ui = q withIndex minBy: ![ | #{ _. pt } | dist get: pt last $ get: pt first ].
-            u = ui last.
-            q delete: ui first.
+        // Start from the end and search outwards
+        seen get: self end last $ set: self end first value: true.
+        queue insert: (PriorityBox value: self end priority: 0).
 
-            // Iterate over possible moves from here
-            moveMap get: u last $ get: u first $ forEach: [ |v|
-                alt = (dist get: u last $ get: u first) + 1.
-                alt lessThan: (dist get: v last $ get: v first) $ ifTrue: [
-                    dist get: v last $ set: v first value: alt.
-                    prev get: v last $ set: v first value: u.
+        [ queue length greaterThan: 0 ] whileTrue: [
+            // Set the distance to the new best distance
+            current = queue pop.
+            oldBestDist = dist get: current value last $ get: current value first.
+            dist get: current value last $ set: current value first value: #{ current priority. oldBestDist } min.
+
+            // For each point this could be reached from...
+            moveMap get: current value last $ get: current value first $ forEach: [ |adj|
+                // Have we seen this value before?
+                seenAdj = seen get: adj last $ get: adj first.
+
+                // If not, mark it as seen and add it to the queue
+                seenAdj ifFalse: [
+                    seen get: adj last $ set: adj first value: true.
+                    queue insert: (PriorityBox value: adj priority: current priority + 1).
                 ].
-            ].
+            ]
         ].
 
         dist
@@ -115,8 +119,7 @@ impl ElevationMap {
 struct Day12.
 impl Day12 {
     static func map {
-        input = File open: "input/day12" in: &readAllText. // TODO Windows again
-        ElevationMap parse: input
+        ElevationMap parse: (AOC readInput: 12)
     }
 
     static func part1 {
