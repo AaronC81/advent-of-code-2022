@@ -26,7 +26,8 @@ impl ElevationMap {
     func width { self points first length }
     func height { self points length }
 
-    /// For each point, create an array of the points it's possible to move to from that point.
+    /// For each point, create an array of the points where it's possible to move here from that
+    /// point.
     func possibleMoveMap {
         // Y, then X, gives an array of points you can move to
         arr = self new2DArrayFrom: [ #{} ].
@@ -39,12 +40,12 @@ impl ElevationMap {
                 // Get all adjacent points
                 adjs = self pointsAdjacentTo: #{ x. y }.
                 
-                // Filter to the ones whose elevation means we can move there
+                // Filter to the ones whose elevation means we can move here from there
                 adjs = adjs filter: [ |adj|
-                    adjElev = self elevation: adj.
+                    fromElev = self elevation: adj.
 
                     // Either it's less than or equal to, or exactly one greater
-                    (adjElev lessThanOrEquals: myElev) or: (adjElev equals: (myElev + 1))
+                    (myElev lessThanOrEquals: fromElev) or: (myElev equals: (fromElev + 1))
                 ].
 
                 // Add to result
@@ -87,7 +88,7 @@ impl ElevationMap {
                 q append: #{ x. y }.
             ]
         ].
-        dist get: self start last $ set: self start first value: 0.
+        dist get: self end last $ set: self end first value: 0.
         
         [ q length greaterThan: 0 ] whileTrue: [
             Console println: q length.
@@ -113,18 +114,32 @@ impl ElevationMap {
 
 struct Day12.
 impl Day12 {
-    static func shortestPaths {
+    static func map {
         input = File open: "input/day12" in: &readAllText. // TODO Windows again
-        ElevationMap parse: input $ shortestPaths.
+        ElevationMap parse: input
     }
 
     static func part1 {
-        self shortestPaths get: self end last $ get: self end first
+        map = self map.
+        map shortestPaths get: map start last $ get: map start first
     }
 
     static func part2 {
-        // TODO
+        map = self map.
+        dists = map shortestPaths.
+
+        distsFromA = #{}.
+        map width times: [ |x|
+            map height times: [ |y|
+                map points get: y $ get: x $ equals: 1 $ ifTrue: [
+                    distsFromA append: (dists get: y $ get: x).
+                ]
+            ].
+        ]. 
+
+        distsFromA min
     }
 }
 
 Console println: Day12 part1.
+Console println: Day12 part2.
