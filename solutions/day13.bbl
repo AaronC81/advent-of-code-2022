@@ -99,8 +99,8 @@ impl Day13 {
         packets = packets sort.
 
         // Find dividers
-        divider1Index = packets withIndex find: ![ | #{ _. v } | v contents equals: #{ #{ 2 } } ] $ first + 1.
-        divider2Index = packets withIndex find: ![ | #{ _. v } | v contents equals: #{ #{ 6 } } ] $ first + 1.
+        divider1Index = packets index: [ |v| v contents equals: #{ #{ 2 } } ] $ + 1.
+        divider2Index = packets index: [ |v| v contents equals: #{ #{ 6 } } ] $ + 1.
 
         // Calculate divider key
         divider1Index * divider2Index
