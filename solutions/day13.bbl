@@ -1,6 +1,6 @@
 Program evalFile: "../utils/aoc.bbl".
 
-struct Packet.
+struct Packet contents.
 impl Packet {
     static func parse: line {
         // Replace brackets to have trailing/leading commas to make splitting easier
@@ -27,7 +27,7 @@ impl Packet {
         }).
 
         // Unwrap one level of nesting
-        root first.
+        Packet contents: root first.
     }
 }
 
@@ -64,15 +64,48 @@ impl PacketOrdering {
     }
 }
 
-s = AOC readInput: 13 $ split: "\n\n"
+// Implement `Orderable` for packets, so we can call `Enumerable sort` on an array of them
+impl Packet {
+    func greaterThan: other {
+        PacketOrdering compare: self contents with: other contents $ equals: PacketOrdering#Incorrect.
+    }
+    use Orderable.
+}
+
+struct Day13.
+impl Day13 {
+    static func part1 {
+        AOC readInput: 13 $ split: "\n\n"
     $ map: [ |block|
-        // Parse the two blocks
+                // Parse the two packets in this block
         parts = block split: "\n" $ map: [ |p| Packet parse: p ].
 
-        // Compare
-        PacketOrdering compare: parts first with: parts last
+                // Compare them
+                PacketOrdering compare: parts first contents with: parts last contents
     ]
+            // Sum the indeces of the packets which are in the right order
     $ withIndex filter: ![ | #{ _. f } | f equals: PacketOrdering#Correct ]
     $ map: ![ | #{ i. _ } | i + 1 ]
     $ sum.
-Console println: s.
+    }
+
+    static func part2 {
+        // Parse all, without blank lines, and add divider packets
+        packets = AOC readInput: 13 $ replace: "\n\n" with: "\n" $ split: "\n" $ map: [ |p| Packet parse: p ].
+        packets append: (Packet contents: #{ #{ 2 } }).
+        packets append: (Packet contents: #{ #{ 6 } }).
+
+        // Sort packets
+        packets = packets sort.
+
+        // Find dividers
+        divider1Index = packets withIndex find: ![ | #{ _. v } | v contents equals: #{ #{ 2 } } ] $ first + 1.
+        divider2Index = packets withIndex find: ![ | #{ _. v } | v contents equals: #{ #{ 6 } } ] $ first + 1.
+
+        // Calculate divider key
+        divider1Index * divider2Index
+    }
+}
+
+Console println: Day13 part1.
+Console println: Day13 part2.
