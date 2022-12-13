@@ -1,0 +1,78 @@
+Program evalFile: "../utils/aoc.bbl".
+
+struct Packet.
+impl Packet {
+    static func parse: line {
+        // Replace brackets to have trailing/leading commas to make splitting easier
+        line = line replace: "[" with: "[," $ replace: "]" with: ",]" $ split: ",".
+        
+        root = #{}.
+        nesting = #{ root }.
+        line forEach: (Match mustBeOneOf: #{
+            ?[ | "[" |
+                // Insert a new list and start appending to that 
+                new = #{}.
+                nesting last append: new.
+                nesting append: new.
+            ]
+            ?[ | "]" |
+                // Current list is done
+                nesting pop.
+            ]
+            ?[ |x|
+                // Just an integer
+                i = x toInteger.
+                i isNull ifFalse: [ nesting last append: i ].
+            ]
+        }).
+
+        // Unwrap one level of nesting
+        root first.
+    }
+}
+
+enum PacketOrdering {
+    Correct.
+    Incorrect.
+    Indeterminate.
+}
+impl PacketOrdering {    
+    static func compare: left with: right {
+        // Simplest case - if they're both integers, just compare them
+        ?[ | Integer. Integer |
+            left lessThan: right    $ ifTrue: [ return #Correct ].
+            left greaterThan: right $ ifTrue: [ return #Incorrect ].
+            return #Indeterminate.
+        ] callWith: #{ left. right }.
+
+        // From here, we want to assume that *both* left and right are arrays. But this might not be
+        // the case, so if either is an integer, convert it into a one-item array.
+        ?[ | Integer | left =  #{ left }  ] call: left.
+        ?[ | Integer | right = #{ right } ] call: right.
+
+        // Recursively compare the items for both
+        left zip: right $ forEach: [ |pair|
+            // If the comparison between the two is not indeterminate, return that
+            comparison = self compare: pair first with: pair last.
+            comparison notEquals: #Indeterminate $ ifTrue: [ return comparison ].
+        ].
+
+        // Finally, return based on the length of the arrays
+        left length lessThan:    right length $ ifTrue: [ return #Correct ].
+        left length greaterThan: right length $ ifTrue: [ return #Incorrect ].
+        #Indeterminate
+    }
+}
+
+s = AOC readInput: 13 $ split: "\n\n"
+    $ map: [ |block|
+        // Parse the two blocks
+        parts = block split: "\n" $ map: [ |p| Packet parse: p ].
+
+        // Compare
+        PacketOrdering compare: parts first with: parts last
+    ]
+    $ withIndex filter: ![ | #{ _. f } | f equals: PacketOrdering#Correct ]
+    $ map: ![ | #{ i. _ } | i + 1 ]
+    $ sum.
+Console println: s.
