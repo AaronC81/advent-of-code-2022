@@ -76,17 +76,17 @@ struct Day13.
 impl Day13 {
     static func part1 {
         AOC readInput: 13 $ split: "\n\n"
-    $ map: [ |block|
-                // Parse the two packets in this block
-        parts = block split: "\n" $ map: [ |p| Packet parse: p ].
+        $ map: [ |block|
+            // Parse the two packets in this block
+            parts = block split: "\n" $ map: [ |p| Packet parse: p ].
 
-                // Compare them
-                PacketOrdering compare: parts first contents with: parts last contents
-    ]
-            // Sum the indeces of the packets which are in the right order
-    $ withIndex filter: ![ | #{ _. f } | f equals: PacketOrdering#Correct ]
-    $ map: ![ | #{ i. _ } | i + 1 ]
-    $ sum.
+            // Compare them
+            PacketOrdering compare: parts first contents with: parts last contents
+        ]
+        // Sum the indeces of the packets which are in the right order
+        $ withIndex filter: ![ | #{ _. f } | f equals: PacketOrdering#Correct ]
+        $ map: ![ | #{ i. _ } | i + 1 ]
+        $ sum.
     }
 
     static func part2 {
