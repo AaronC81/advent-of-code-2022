@@ -1,0 +1,160 @@
+Program evalFile: "../utils/aoc.bbl".
+
+/// A point on the map.
+struct Point x y.
+impl Point {
+    /// Return a copy of this point, offset by a certain amount.
+    func dx: dx dy: dy {
+        Point x: (self x + dx) y: (self y + dy)
+    }
+}
+
+/// An object at a point on the map.
+enum CaveObject {
+    Air.
+    Rock.
+    Sand.
+}
+
+/// The cave map.
+struct CaveMap points.
+impl CaveMap {
+    /// Creates a new cave map, completely filled with air.
+    static func new {
+        // Big enough?
+        width = 1000.
+        height = 200.
+
+        CaveMap points: (Array newFrom: [ Array newFrom: [ CaveObject#Air ] length: width ] length: height)
+    }
+
+    /// Parses a path to plot rocks along, and returns an array of points describing it.
+    static func parseRockPath: line { 
+        line split: " -> " $ map: [ |p|
+            coords = p split: ",".
+            Point x: coords first toInteger y: coords last toInteger
+        ]
+    }
+
+    /// Draws a parsed rock path onto the map.
+    func drawRockPath: path {
+        path window: 2 $ forEach: ![ | #{ last. this } |
+            // Horizontal line
+            last y equals: this y $ ifTrue: [
+                start = #{ this x. last x. } min.
+                end   = #{ this x. last x. } max.
+                Range start: start end: (end + 1) $ forEach: [ | x |
+                    self set: (Point x: x y: last y) value: CaveObject#Rock
+                ]
+            ].
+
+            // Vertical line
+            last x equals: this x $ ifTrue: [
+                start = #{ this y. last y. } min.
+                end   = #{ this y. last y. } max.
+                Range start: start end: (end + 1) $ forEach: [ | y |
+                    self set: (Point x: last x y: y) value: CaveObject#Rock
+                ]
+            ].
+        ]
+    }
+
+    /// The point from which sand falls.
+    static func origin {
+        Point x: 500 y: 0
+    }
+
+    /// Creates a new sand particle at the origin, lets it fall into place according to the puzzle
+    /// rules, and returns a boolean indicating whether it was actually placed on the map. If false,
+    /// the sand fell into the abyss.
+    func fallSand {
+        sandPoint = CaveMap origin.
+        
+        // Repeatedly call `fallStep:` to figure out where the sand lands, until it returns `null`
+        Program loop: [
+            // If we're at the bottom, we've fallen into the abyss!
+            sandPoint y equals: (self points length - 1) $ ifTrue: [ return false ].
+
+            newPoint = self fallStep: sandPoint.
+            newPoint isNull ifTrue: [
+                self set: sandPoint value: CaveObject#Sand.
+                return true
+            ].
+            sandPoint = newPoint.
+        ]
+    }
+
+    /// Given a point, returns a new point indicating where sand may immediately fall from it.
+    func fallStep: pt {
+        self get: (pt dx: 0  dy: 1) $ equals: CaveObject#Air $ ifTrue: [ return pt dx: 0  dy: 1 ].
+        self get: (pt dx: -1 dy: 1) $ equals: CaveObject#Air $ ifTrue: [ return pt dx: -1 dy: 1 ].
+        self get: (pt dx: 1  dy: 1) $ equals: CaveObject#Air $ ifTrue: [ return pt dx: 1  dy: 1 ].
+        null
+    }
+
+    /// Prints the map as a string.
+    func draw {
+        self points forEach: [ |row|
+            row forEach: [ |cell|
+                Console print: (cell match mustBeOneOf: #{
+                    ?[ | CaveObject#Air  | "." ]
+                    ?[ | CaveObject#Rock | "#" ]
+                    ?[ | CaveObject#Sand | "O" ]
+                })
+            ].
+            Console println: "".
+        ]
+    }
+
+    /// Adds a floor 2 units below the deepest rock.
+    func addFloor {
+        deepestIndex = self points withIndex filter: ![ | #{ _. row } | row contains: CaveObject#Rock ] $ map: &first $ max.
+        floorIndex = deepestIndex + 2.
+        self drawRockPath: #{ Point x: 0 y: floorIndex. Point x: 999 y: floorIndex }
+    }
+
+    /// Gets the object at a point.
+    func get: pt {
+        self points getN: #{ pt y. pt x }
+    }
+    
+    /// Sets the object at a point.
+    func set: pt value: v {
+        self points setN: #{ pt y. pt x } value: v
+    }
+}
+
+struct Day14.
+impl Day14 {
+    static func map {
+        map = CaveMap new.
+        AOC readInput: 14 $ split: "\n" $ forEach: [ |line|
+            map drawRockPath: (CaveMap parseRockPath: line)
+        ].
+        map
+    }
+
+    static func part1 {
+        map = self map.
+        count = 0.
+        [ map fallSand ] whileTrue: [ count = count + 1 ].
+        count
+    }
+
+    static func part2 {
+        map = self map.
+        map addFloor.
+
+        count = 0.
+        Program loop: [
+            // We don't expect to land in the abyss for this part!
+            map fallSand ifFalse: [ Program error: "landed in abyss unexpectedly" ].
+            count = count + 1.
+
+            map get: CaveMap origin $ equals: CaveObject#Sand $ ifTrue: [ return count ].
+        ].
+    }
+}
+
+Console println: Day14 part1.
+Console println: Day14 part2.
