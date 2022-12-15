@@ -1,0 +1,96 @@
+Program evalFile: "../utils/aoc.bbl".
+
+struct Point x y.
+impl Point {
+    func manhattanDistance: other {
+        (self x - other x) abs + (self y - other y) abs
+    }
+}
+
+struct Sensor position beacon radius.
+impl Sensor {
+    func radiusAtY: y {
+        r = (self radius - (self position y - y) abs).
+        r lessThan: 0 $ ifTrue: [ return null ].
+        r
+    }
+
+    func rangeAtY: y {
+        r = self radiusAtY: y.
+        r isNull ifTrue: [ return null ].
+        Range start: (self position x - r) end: (self position x + r + 1)
+    }
+}
+
+struct Day15.
+impl Day15 {
+    static func concatenateRanges: ranges {
+        // Sort by start
+        ranges = ranges sortBy: &start.
+
+        // Concatenate ranges
+        result = #{}.
+        ranges forEach: [ |range|
+            result isEmpty ifTrue: [
+                result append: range.
+            ] else: [
+                last = result last.
+                last end $ greaterThanOrEquals: range start $ ifTrue: [
+                    result pop.
+                    result append: (Range start: last start end: #{ range end. last end } max).
+                ] else: [
+                    result append: range.
+                ]
+            ]
+        ].
+        result
+    }
+
+    static func parseLine: line {
+        // This one is *awful* to do without regex
+        // Make whitespace our only meaningful separator by replacing `=`, `,`, and `:`
+        //   Sensor at x=2, y=18: closest beacon is at x -2 y 15
+        //   Sensor at x 2 y 18 closest beacon is at x -2 y 15
+        line = line replace: "=" with: " " $ replace: "," with: "" $ replace: ":" with: "".
+
+        // Now split on space and find the items which are numbers
+        numberParts = line split: " " $ map: &toInteger $ reject: &isNull.
+
+        // Instantiate sensor
+        sensorPos = Point x: (numberParts get: 0) y: (numberParts get: 1).
+        beaconPos = Point x: (numberParts get: 2) y: (numberParts get: 3).
+        dist = sensorPos manhattanDistance: beaconPos.
+        Sensor position: sensorPos beacon: beaconPos radius: dist
+    }
+
+    static func sensors {
+        AOC readInput: 15 $ split: "\n" $ map: [ |line| Day15 parseLine: line ]
+    }
+
+    static func part1 {
+        y = 2000000.
+
+        sensors = Day15 sensors.
+        beacons = sensors map: &beacon $ unique.
+
+        // Collect the ranges on this line where a beacon cannot be
+        ranges = #{}.
+        sensors forEach: [ |sensor|
+            range = sensor rangeAtY: y.
+            range isNull ifFalse: [
+                ranges append: range.
+            ].
+        ].
+
+        // Some of the ranges might overlap - find and concatenate them
+        ranges = Day15 concatenateRanges: ranges.
+
+        // Don't include any beacons which are on this row in the count
+        occupiedSpacesCount = ranges map: [ |r| r end - r start ] $ sum.
+        beaconSpacesCount = beacons filter: [ |b| b y equals: y ] $ length.
+
+        occupiedSpacesCount - beaconSpacesCount
+    }
+}
+
+Console println: Day15 part1.
